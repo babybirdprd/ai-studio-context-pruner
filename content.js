@@ -1,9 +1,9 @@
-let sidebarOpen = false;
+let sidebarOpen = false; // Start with sidebar logically closed (hidden to the left)
 let sidebarElement = null;
 let chatContainerObserver = null;
 let observerDebounceTimer = null;
 let initialObserverSetupAttempted = false;
-let scrapedMessagesCache = {}; // { turnElementId: "snippet text" }
+let scrapedMessagesCache = {};
 let isScrapingInProgress = false;
 
 function createSidebar() {
@@ -13,6 +13,7 @@ function createSidebar() {
 
   sidebarElement = document.createElement('div');
   sidebarElement.id = 'ai-studio-pruner-sidebar';
+  // The 'visible' class will be added/removed to control 'left' property via CSS
 
   const contentWrapper = document.createElement('div');
   contentWrapper.className = 'pruner-content-wrapper';
@@ -27,7 +28,8 @@ function createSidebar() {
   refreshButton.className = 'pruner-refresh-btn';
   refreshButton.title = "Refresh list (for currently visible messages)";
   refreshButton.onclick = () => {
-    populateSidebar(); // Refresh explicitly calls populate without using cache initially
+    scrapedMessagesCache = {};
+    populateSidebar();
     attemptSetupChatContainerObserver();
   };
   header.appendChild(title);
@@ -38,21 +40,18 @@ function createSidebar() {
   const bulkActionsDiv = document.createElement('div');
   bulkActionsDiv.className = 'pruner-bulk-actions';
 
-  // -- Load All Button --
   const loadAllRow = document.createElement('div');
   loadAllRow.className = 'pruner-bulk-actions-row';
   const loadAllButton = document.createElement('button');
+  loadAllButton.id = 'pruner-load-all-btn';
   loadAllButton.textContent = 'Load All Message Previews';
   loadAllButton.title = "Scrolls through chat to load all previews (can be slow)";
-  loadAllButton.className = 'pruner-action-btn'; 
-  loadAllButton.style.marginBottom = "10px"; // Add some space
-  loadAllButton.style.width = "100%"; // Make it full width in its row
+  loadAllButton.className = 'pruner-action-btn load-all';
+  loadAllButton.style.width = "100%";
   loadAllButton.onclick = handleLoadAllMessages;
   loadAllRow.appendChild(loadAllButton);
   bulkActionsDiv.appendChild(loadAllRow);
 
-
-  // -- Select All Row --
   const selectAllRowCheck = document.createElement('div');
   selectAllRowCheck.className = 'pruner-bulk-actions-row';
   const selectAllLabel = document.createElement('label');
@@ -66,17 +65,17 @@ function createSidebar() {
   selectAllRowCheck.appendChild(selectAllCheckbox);
   bulkActionsDiv.appendChild(selectAllRowCheck);
 
-  // -- Delete Selected Button --
   const deleteSelectedRow = document.createElement('div');
   deleteSelectedRow.className = 'pruner-bulk-actions-row';
   const deleteSelectedButton = document.createElement('button');
+  deleteSelectedButton.id = 'pruner-delete-selected-btn';
   deleteSelectedButton.textContent = 'Delete Selected';
   deleteSelectedButton.className = 'pruner-action-btn delete';
+  deleteSelectedButton.disabled = true;
   deleteSelectedButton.onclick = handleDeleteSelected;
   deleteSelectedRow.appendChild(deleteSelectedButton);
   bulkActionsDiv.appendChild(deleteSelectedRow);
   
-  // -- Range Delete Row --
   const rangeDeleteRow = document.createElement('div');
   rangeDeleteRow.className = 'pruner-bulk-actions-row';
   rangeDeleteRow.style.marginTop = '10px';
@@ -85,20 +84,22 @@ function createSidebar() {
   const startIndexInput = document.createElement('input');
   startIndexInput.type = 'number';
   startIndexInput.id = 'pruner-range-start';
-  startIndexInput.placeholder = 'Start';
+  startIndexInput.placeholder = 'Start #';
   startIndexInput.min = "1";
+  startIndexInput.oninput = updateDeleteRangeButtonState;
   const toLabel = document.createElement('label');
   toLabel.textContent = 'to:';
-  toLabel.style.marginLeft = "5px";
   const endIndexInput = document.createElement('input');
   endIndexInput.type = 'number';
   endIndexInput.id = 'pruner-range-end';
-  endIndexInput.placeholder = 'End';
+  endIndexInput.placeholder = 'End #';
   endIndexInput.min = "1";
+  endIndexInput.oninput = updateDeleteRangeButtonState;
   const deleteRangeButton = document.createElement('button');
+  deleteRangeButton.id = 'pruner-delete-range-btn';
   deleteRangeButton.textContent = 'Delete Range';
   deleteRangeButton.className = 'pruner-action-btn delete';
-  deleteRangeButton.style.marginLeft = '10px';
+  deleteRangeButton.disabled = true;
   deleteRangeButton.onclick = handleDeleteRange;
   rangeDeleteRow.appendChild(rangeLabel);
   rangeDeleteRow.appendChild(startIndexInput);
@@ -108,66 +109,66 @@ function createSidebar() {
   bulkActionsDiv.appendChild(rangeDeleteRow);
   contentWrapper.appendChild(bulkActionsDiv);
 
-  // Message List
   const messageList = document.createElement('ul');
   messageList.className = 'pruner-message-list';
   contentWrapper.appendChild(messageList);
-  sidebarElement.appendChild(contentWrapper);
+  
+  sidebarElement.appendChild(contentWrapper); // Content first
 
-  // Toggle Visibility Button
   const toggleBtn = document.createElement('button');
   toggleBtn.className = 'pruner-toggle-visibility-btn';
-  toggleBtn.innerHTML = '<span class="arrow">«</span>';
+  const arrowSpan = document.createElement('span');
+  arrowSpan.className = 'arrow';
+  // CSS will set the initial 'content' for the arrow based on :not(.visible)
+  // Default to collapsed state icon if .visible is not yet added
+  arrowSpan.textContent = 'keyboard_double_arrow_right'; 
+  toggleBtn.appendChild(arrowSpan);
   toggleBtn.title = "Toggle Sidebar";
   toggleBtn.onclick = () => {
     sidebarOpen = !sidebarOpen;
-    sidebarElement.classList.toggle('collapsed', !sidebarOpen);
     sidebarElement.classList.toggle('visible', sidebarOpen);
+    // Arrow icon content is now fully handled by CSS
     if (sidebarOpen) {
-        populateSidebar(); // Initial populate on open
+        populateSidebar();
         attemptSetupChatContainerObserver();
     }
   };
-  sidebarElement.appendChild(toggleBtn);
+  sidebarElement.appendChild(toggleBtn); // Toggle button after content wrapper
 
   document.body.appendChild(sidebarElement);
   return sidebarElement;
 }
 
 function handleSidebarToggleRequest() {
-  sidebarElement = createSidebar();
-  const isCurrentlyCollapsed = sidebarElement.classList.contains('collapsed');
-  
-  if (isCurrentlyCollapsed) {
-    sidebarOpen = true;
-    sidebarElement.classList.remove('collapsed');
-    sidebarElement.classList.add('visible');
-    populateSidebar();
-    attemptSetupChatContainerObserver();
-  } else {
-    sidebarOpen = false;
-    sidebarElement.classList.add('collapsed');
+  sidebarElement = createSidebar(); // Ensure it's created
+  sidebarOpen = !sidebarOpen;
+  sidebarElement.classList.toggle('visible', sidebarOpen);
+  // Arrow icon content is handled by CSS based on .visible class
+  if (sidebarOpen) {
+      populateSidebar();
+      attemptSetupChatContainerObserver();
   }
 }
 
 async function handleLoadAllMessages() {
   if (isScrapingInProgress) {
-    console.log("AI Studio Pruner: Scraping already in progress.");
     alert("Loading already in progress. Please wait.");
     return;
   }
   isScrapingInProgress = true;
   scrapedMessagesCache = {}; 
 
+  const loadAllBtn = document.getElementById('pruner-load-all-btn');
+  if (loadAllBtn) {
+    loadAllBtn.textContent = 'Loading...';
+    loadAllBtn.disabled = true;
+  }
+
   const messageListElement = sidebarElement.querySelector('.pruner-message-list');
   let statusElement = document.getElementById('pruner-status-message');
   if (!statusElement) {
     statusElement = document.createElement('div');
     statusElement.id = 'pruner-status-message';
-    statusElement.style.padding = "10px 15px";
-    statusElement.style.textAlign = "center";
-    statusElement.style.backgroundColor = "#282828";
-    statusElement.style.borderBottom = "1px solid #444";
     messageListElement.insertAdjacentElement('beforebegin', statusElement);
   }
   statusElement.textContent = "Loading all message previews... please wait.";
@@ -175,7 +176,11 @@ async function handleLoadAllMessages() {
   const allTurnElements = Array.from(document.querySelectorAll('ms-chat-turn'));
   if (allTurnElements.length === 0) {
     statusElement.textContent = "No messages found in chat.";
-    setTimeout(() => statusElement.remove(), 3000);
+    setTimeout(() => { if(statusElement) statusElement.remove(); }, 3000);
+    if (loadAllBtn) {
+        loadAllBtn.textContent = 'Load All Message Previews';
+        loadAllBtn.disabled = false;
+    }
     isScrapingInProgress = false;
     return;
   }
@@ -192,7 +197,7 @@ async function handleLoadAllMessages() {
     try {
       const roleElement = turnElement.querySelector('[data-turn-role]');
       const role = roleElement ? roleElement.getAttribute('data-turn-role') : 'Unknown';
-      const text = await waitForContentAndScrape(turnElement, role, 3000); // 3 sec timeout
+      const text = await waitForContentAndScrape(turnElement, role, 3000);
       scrapedMessagesCache[turnId] = text;
     } catch (error) {
       console.warn(`AI Studio Pruner: Timeout or error scraping turn ${i + 1}:`, error);
@@ -200,11 +205,15 @@ async function handleLoadAllMessages() {
     }
     
     statusElement.textContent = `Loading previews... (${i + 1}/${allTurnElements.length})`;
-    await new Promise(resolve => setTimeout(resolve, 50)); // Shorter delay between scrolls
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
   isScrapingInProgress = false;
   if (statusElement) statusElement.remove();
+  if (loadAllBtn) {
+    loadAllBtn.textContent = 'Load All Message Previews';
+    loadAllBtn.disabled = false;
+  }
   populateSidebar(true); 
   console.log("AI Studio Pruner: Finished loading all message previews.");
 }
@@ -212,14 +221,14 @@ async function handleLoadAllMessages() {
 function waitForContentAndScrape(turnElement, role, timeoutMs) {
   return new Promise((resolve, reject) => {
     let initialText = getMessageSnippet(turnElement, role);
-    if (initialText && !initialText.startsWith("[No text") && !initialText.startsWith("[Error")) {
+    if (initialText && !initialText.startsWith("[No text") && !initialText.startsWith("[Error") && !initialText.startsWith("[Media")) {
       resolve(initialText);
       return;
     }
 
     const observer = new MutationObserver((mutationsList, obs) => {
       const newText = getMessageSnippet(turnElement, role);
-      if (newText && !newText.startsWith("[No text") && !newText.startsWith("[Error")) {
+      if (newText && !newText.startsWith("[No text") && !newText.startsWith("[Error") && !newText.startsWith("[Media")) {
         obs.disconnect();
         clearTimeout(timeoutHandle);
         resolve(newText);
@@ -231,12 +240,7 @@ function waitForContentAndScrape(turnElement, role, timeoutMs) {
     const timeoutHandle = setTimeout(() => {
       observer.disconnect();
       const fallbackText = getMessageSnippet(turnElement, role); 
-      if (fallbackText && !fallbackText.startsWith("[No text") && !fallbackText.startsWith("[Error")) {
-        resolve(fallbackText);
-      } else {
-        // console.warn(`AI Studio Pruner: Timeout for turn. Role: ${role}. HTML:`, turnElement.innerHTML.substring(0, 300));
-        resolve("[Timeout loading snippet]"); // Resolve with a timeout message instead of rejecting
-      }
+      resolve(fallbackText);
     }, timeoutMs);
   });
 }
@@ -262,11 +266,11 @@ function getMessageSnippet(turnElement, role) {
     'ms-cmark-node',
     'ms-text-chunk textarea',
     'ms-text-chunk',
-    '.turn-content > div > div', // More specific generic content div
-    '.turn-content' // Broader content div
+    '.turn-content > div > div',
+    '.turn-content'
   ];
 
-  let selectorsToUse = generalSelectors; // Start with general as a base
+  let selectorsToUse = generalSelectors;
   if (role.toLowerCase() === 'user') {
     selectorsToUse = userSelectors.concat(generalSelectors);
   } else if (role.toLowerCase() === 'model') {
@@ -277,7 +281,7 @@ function getMessageSnippet(turnElement, role) {
     contentSourceElement = turnElement.querySelector(selector);
     if (contentSourceElement) {
       const clone = contentSourceElement.cloneNode(true);
-      clone.querySelectorAll('button, mat-icon, .material-symbols-outlined, ms-thought-chunk')
+      clone.querySelectorAll('button, mat-icon, .material-symbols-outlined, ms-thought-chunk, .actions-container, .turn-footer, ms-chat-turn-options, ms-prompt-feedback, .model-run-time-pill, .feedback-container, .header, .info-container, script, style')
            .forEach(el => el.remove());
       text = (clone.tagName === 'TEXTAREA') ? clone.value : clone.textContent;
       text = text ? text.trim() : "";
@@ -291,7 +295,6 @@ function getMessageSnippet(turnElement, role) {
       '.actions-container', '.turn-footer', 'ms-chat-turn-options', 
       'ms-prompt-feedback', '.model-run-time-pill', '.feedback-container', 
       '.header', '.info-container', 
-      // '.role-container', // Let's try keeping this and cleaning its text later
       'ms-thought-chunk', 'ms-add-chunk-menu', 'run-button',
       'button', 'mat-icon', '.material-symbols-outlined',
       'script', 'style'
@@ -305,8 +308,8 @@ function getMessageSnippet(turnElement, role) {
   const patternsToClean = [
     /\b(more_vert|edit|thumb_up|thumb_down|cached|content_copy|add_circle|send|refresh|close|tune|menu|key|history|videocam|graphic_eq|extension|open_in_new|settings|save|share|compare_arrows|expand_less|expand_more|chevron_right|prompt_spark|lightbulb|palette|code|play_arrow|stop|download|upload|visibility|visibility_off|search|filter_list|delete|info|warning|error|check_circle|cancel|arrow_drop_down|arrow_drop_up|arrow_back|arrow_forward|first_page|last_page|drag_handle|view_module|view_list|apps|thoughts|assignment)\b/gi,
     new RegExp(`^${role}\\s*\\(\\d+\\)\\s*`, 'i'), 
-    /^\s*\(\d+\)\s*/, // E.g. " (10) " at the start
-    /\s\(\d+\)$/, // E.g. " (10)" at the end
+    /^\s*\(\d+\)\s*/, 
+    /\s\(\d+\)$/, 
     /\s\s+/g 
   ];
 
@@ -316,7 +319,6 @@ function getMessageSnippet(turnElement, role) {
   text = text.trim();
 
   if (!text) {
-    // console.warn(`AI Studio Pruner: Final text is empty for role "${role}". Turn HTML:`, turnElement.innerHTML.substring(0, 500));
     if (turnElement.querySelector('ms-prompt-chunk[id*="-"], img, video, audio')) {
         return "[Media content or non-text chunk]";
     }
@@ -338,12 +340,14 @@ function populateSidebar(useCache = false) {
   
   const selectAllCheckbox = document.getElementById('pruner-select-all-checkbox');
   if (selectAllCheckbox) selectAllCheckbox.checked = false;
+  updateDeleteSelectedButtonState();
 
   const chatTurns = document.querySelectorAll('ms-chat-turn');
   const startIndexInput = document.getElementById('pruner-range-start');
   const endIndexInput = document.getElementById('pruner-range-end');
   if (startIndexInput) startIndexInput.max = chatTurns.length;
   if (endIndexInput) endIndexInput.max = chatTurns.length;
+  updateDeleteRangeButtonState();
 
   chatTurns.forEach((turnElement, index) => {
     if (!turnElement.dataset.prunerId) { 
@@ -355,7 +359,7 @@ function populateSidebar(useCache = false) {
     const role = roleElement ? roleElement.getAttribute('data-turn-role') : 'Unknown';
     
     let snippet;
-    if (useCache && typeof scrapedMessagesCache[turnId] === 'string') { // Check if it's a string (could be null/undefined)
+    if (useCache && typeof scrapedMessagesCache[turnId] === 'string') {
         snippet = scrapedMessagesCache[turnId];
     } else {
         snippet = getMessageSnippet(turnElement, role);
@@ -372,16 +376,29 @@ function populateSidebar(useCache = false) {
     checkbox.type = 'checkbox';
     checkbox.className = 'pruner-message-checkbox';
     checkbox.dataset.turnIndex = index; 
+    checkbox.onchange = updateDeleteSelectedButtonState;
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'pruner-message-content';
 
     const roleSpan = document.createElement('div');
     roleSpan.className = `pruner-message-role ${role.toLowerCase()}`;
-    roleSpan.textContent = `${role} (${index + 1})`; 
+    
+    const roleIcon = document.createElement('span');
+    roleIcon.className = 'role-icon';
+    roleIcon.textContent = (role.toLowerCase() === 'user') ? 'person' : 'smart_toy';
+    
+    const roleText = document.createElement('span');
+    roleText.textContent = `${role} (${index + 1})`;
+    
+    roleSpan.appendChild(roleIcon);
+    roleSpan.appendChild(roleText);
 
     const snippetP = document.createElement('p');
     snippetP.className = 'pruner-message-snippet';
+    if (snippet.startsWith("[No text") || snippet.startsWith("[Error") || snippet.startsWith("[Media")) {
+        snippetP.classList.add('no-content');
+    }
     snippetP.textContent = snippet;
 
     contentDiv.appendChild(roleSpan);
@@ -389,7 +406,8 @@ function populateSidebar(useCache = false) {
 
     const deleteButton = document.createElement('button');
     deleteButton.className = 'pruner-delete-btn';
-    deleteButton.textContent = 'Delete';
+    deleteButton.textContent = 'delete_sweep'; 
+    deleteButton.title = "Delete this message";
     deleteButton.onclick = (e) => {
         e.stopPropagation(); 
         handleDelete(turnElement);
@@ -454,7 +472,29 @@ function handleSelectAllToggle(event) {
     const isChecked = event.target.checked;
     const checkboxes = sidebarElement.querySelectorAll('.pruner-message-checkbox');
     checkboxes.forEach(checkbox => checkbox.checked = isChecked);
+    updateDeleteSelectedButtonState();
 }
+
+function updateDeleteSelectedButtonState() {
+    const deleteSelectedBtn = document.getElementById('pruner-delete-selected-btn');
+    if (deleteSelectedBtn) {
+        const checkedCheckboxes = sidebarElement.querySelectorAll('.pruner-message-checkbox:checked');
+        deleteSelectedBtn.disabled = checkedCheckboxes.length === 0;
+    }
+}
+
+function updateDeleteRangeButtonState() {
+    const deleteRangeBtn = document.getElementById('pruner-delete-range-btn');
+    const startInput = document.getElementById('pruner-range-start');
+    const endInput = document.getElementById('pruner-range-end');
+    if (deleteRangeBtn && startInput && endInput) {
+        const startIndex = parseInt(startInput.value, 10);
+        const endIndex = parseInt(endInput.value, 10);
+        const allListItems = Array.from(sidebarElement.querySelectorAll('.pruner-message-list .pruner-message-item'));
+        deleteRangeBtn.disabled = isNaN(startIndex) || isNaN(endIndex) || startIndex < 1 || endIndex < startIndex || endIndex > allListItems.length;
+    }
+}
+
 
 async function handleDeleteSelected() {
     const checkboxes = sidebarElement.querySelectorAll('.pruner-message-checkbox:checked');
@@ -474,10 +514,10 @@ async function handleDeleteSelected() {
         }
     });
 
-    for (const turn of turnsToDelete) {
+    for (const turn of turnsToDelete.reverse()) {
         await handleDelete(turn); 
     }
-    populateSidebar(true); // Use cache after bulk delete to reflect changes quickly
+    populateSidebar(true);
 }
 
 async function handleDeleteRange() {
@@ -506,7 +546,7 @@ async function handleDeleteRange() {
     for (const turn of turnsToDelete.reverse()) { 
         await handleDelete(turn);
     }
-    populateSidebar(true); // Use cache after range delete
+    populateSidebar(true);
     startInput.value = '';
     endInput.value = '';
 }
@@ -533,7 +573,7 @@ function setupChatContainerObserver() {
               });
               if (newTurnAdded && sidebarOpen) { 
                   clearTimeout(observerDebounceTimer);
-                  observerDebounceTimer = setTimeout(() => populateSidebar(false), 300); // Don't use cache for new turns
+                  observerDebounceTimer = setTimeout(() => populateSidebar(false), 300);
               }
               break; 
           }
@@ -568,8 +608,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 sidebarElement = createSidebar(); 
-sidebarElement.classList.add('collapsed'); 
-sidebarOpen = false;
+// Default state is now handled by CSS (left: -310px)
+// sidebarOpen remains false initially.
 
 window.addEventListener('load', () => {
     setTimeout(attemptSetupChatContainerObserver, 1500); 

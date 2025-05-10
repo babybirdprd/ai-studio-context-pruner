@@ -1,79 +1,105 @@
+/* AI Studio Pruner Sidebar Styles */
 #ai-studio-pruner-sidebar {
   position: fixed;
   top: 0;
-  left: -350px; /* Initially hidden */
-  width: 350px;
+  left: 0; /* Start at the edge */
+  width: 40px; /* Default to collapsed width (just the button) */
   height: 100%;
-  background-color: #202124;
-  border-right: 1px solid #444;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.5);
-  z-index: 99999; /* High z-index */
-  transition: left 0.3s ease-in-out, width 0.3s ease-in-out;
+  background-color: transparent; /* Collapsed bar itself is transparent, button has color */
+  box-shadow: none; /* No shadow when collapsed initially */
+  z-index: 99999;
+  transition: width 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
   display: flex;
-  flex-direction: column;
-  font-family: 'Google Sans Text', sans-serif;
+  flex-direction: row; /* Content wrapper and toggle button side-by-side */
+  font-family: 'Roboto', 'Google Sans Text', sans-serif;
   color: #e8eaed;
 }
 
 #ai-studio-pruner-sidebar.visible {
-  left: 0;
+  width: 350px; /* Expanded width */
+  box-shadow: 2px 0 10px rgba(0,0,0,0.35); /* Shadow when expanded */
 }
 
-#ai-studio-pruner-sidebar.collapsed {
-  left: -330px; /* Almost hidden, just the toggle visible */
-  width: 350px; /* Keep width for smooth re-expand */
+.pruner-content-wrapper {
+  width: 310px; /* Width of the actual content area */
+  height: 100%;
+  display: none; /* Hidden by default (when sidebar is collapsed) */
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #202124;
+  border-right: 1px solid #3c4043; /* Separator before the toggle button */
 }
 
-#ai-studio-pruner-sidebar.collapsed .pruner-content-wrapper {
-  display: none;
+#ai-studio-pruner-sidebar.visible .pruner-content-wrapper {
+  display: flex; /* Show content when sidebar is visible */
 }
-
 
 .pruner-toggle-visibility-btn {
-  position: absolute;
-  top: 50%;
-  right: -25px; /* Positioned outside the main sidebar area when expanded */
-  transform: translateY(-50%);
-  width: 25px;
-  height: 50px;
-  background-color: #2d2d2d;
-  border: 1px solid #444;
-  border-left: none;
-  border-top-right-radius: 5px;
-  border-bottom-right-radius: 5px;
+  width: 40px; /* Width of the toggle button / collapsed tab */
+  height: 70px; /* Height of the collapsed tab */
+  background-color: #303134;
+  border: 1px solid #4a4e52;
+  border-left: none; /* No left border for the tab */
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  color: #9aa0a6;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #e8eaed;
-  font-size: 18px;
-  z-index: 10; /* Above sidebar content */
-  transition: right 0.3s ease-in-out, background-color 0.2s;
+  transition: background-color 0.2s ease, height 0.25s ease-in-out, border-radius 0.25s ease-in-out;
+  flex-shrink: 0;
+  position: absolute; /* Position relative to the main sidebar div */
+  top: 50%;
+  left: 0; /* Aligned to the left edge of the (now 40px wide) sidebar div */
+  transform: translateY(-50%);
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
 }
+
+#ai-studio-pruner-sidebar.visible .pruner-toggle-visibility-btn {
+  position: static; /* Back to normal flow when expanded */
+  transform: none;
+  height: 100%;
+  width: 40px; /* Keep its defined width */
+  border-radius: 0;
+  background-color: #282a2d;
+  border-left: 1px solid #3c4043; /* Re-add left border when expanded */
+  border-top: none;
+  border-bottom: none;
+  border-right: none;
+  box-shadow: none;
+}
+
 .pruner-toggle-visibility-btn:hover {
   background-color: #3c4043;
+  color: #bdc1c6;
 }
 
-#ai-studio-pruner-sidebar.collapsed .pruner-toggle-visibility-btn {
-  right: -25px; /* Keep it visible when collapsed */
-}
-#ai-studio-pruner-sidebar.collapsed .pruner-toggle-visibility-btn .arrow {
-  transform: rotate(180deg);
-}
-
-
-.pruner-content-wrapper { /* New wrapper for content */
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+.pruner-toggle-visibility-btn .arrow {
+  font-family: 'Material Symbols Outlined'; /* Crucial for icon rendering */
+  font-size: 24px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+  line-height: 1;
+  transition: transform 0.25s ease-in-out;
 }
 
+/* Icon when sidebar is collapsed (not .visible) - should point right to open */
+#ai-studio-pruner-sidebar:not(.visible) .pruner-toggle-visibility-btn .arrow {
+  content: 'keyboard_double_arrow_right';
+}
 
+/* Icon when sidebar is expanded (.visible) - should point left to close */
+#ai-studio-pruner-sidebar.visible .pruner-toggle-visibility-btn .arrow {
+  content: 'keyboard_double_arrow_left';
+}
+
+/* Header, Bulk Actions, Message List, etc. - Styles remain largely the same as previous good version */
+/* ... (Keep all styles from .pruner-header down to #pruner-status-message from the previous "Final Polish" CSS) ... */
+/* Ensure the .pruner-delete-btn specifically has the font-family */
 .pruner-header {
-  padding: 15px;
+  padding: 12px 18px;
   background-color: #2d2d2d;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid #3c4043;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -82,79 +108,120 @@
 
 .pruner-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 500;
+  color: #e8eaed;
 }
 
-.pruner-refresh-btn {
-  background: #8ab4f8;
-  color: #202124;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
+.pruner-refresh-btn, .pruner-action-btn {
+  background: #3c4043;
+  color: #e8eaed;
+  border: 1px solid #5f6368;
+  padding: 6px 12px;
+  border-radius: 5px;
   cursor: pointer;
   font-size: 13px;
-}
-.pruner-refresh-btn:hover {
-  background: #7ba9f0;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
+.pruner-refresh-btn:hover, .pruner-action-btn:hover {
+  background-color: #4a4e52;
+  border-color: #787c81;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.pruner-refresh-btn:active, .pruner-action-btn:active {
+  background-color: #52565a;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+
+.pruner-action-btn.load-all {
+  background-color: #8ab4f8;
+  color: #202124;
+  border-color: transparent;
+}
+.pruner-action-btn.load-all:hover {
+  background-color: #7ba9f0;
+  border-color: transparent;
+}
+.pruner-action-btn.load-all:disabled {
+  background-color: #4a4e52;
+  color: #787c81;
+  border-color: #5f6368;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+
+.pruner-action-btn.delete {
+  background-color: #d93025;
+  color: white;
+  border-color: transparent;
+}
+.pruner-action-btn.delete:hover {
+  background-color: #c5221f;
+  border-color: transparent;
+}
+.pruner-action-btn:disabled {
+  background-color: #4a4e52;
+  color: #787c81;
+  border-color: #5f6368;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+
 .pruner-bulk-actions {
-  padding: 10px 15px;
-  background-color: #282828;
-  border-bottom: 1px solid #444;
+  padding: 12px 18px;
+  border-bottom: 1px solid #3c4043;
+  background-color: #252629;
   flex-shrink: 0;
 }
 
 .pruner-bulk-actions-row {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  gap: 8px;
 }
 .pruner-bulk-actions-row:last-child {
   margin-bottom: 0;
 }
 
 .pruner-bulk-actions-row label {
-  margin-right: 10px;
   font-size: 13px;
+  color: #bdc1c6;
   white-space: nowrap;
 }
 
-.pruner-bulk-actions-row input[type="checkbox"],
-.pruner-bulk-actions-row input[type="number"] {
-  margin-right: 5px;
+.pruner-bulk-actions-row input[type="checkbox"] {
+  margin-left: 4px;
+  margin-right: 8px;
   accent-color: #8ab4f8;
+  width: 16px;
+  height: 16px;
 }
+
 .pruner-bulk-actions-row input[type="number"] {
-  width: 50px;
-  padding: 4px;
-  background-color: #3c4043;
+  width: 55px;
+  padding: 7px;
+  background-color: #2d2d2d;
   border: 1px solid #5f6368;
   color: #e8eaed;
-  border-radius: 3px;
-  font-size: 13px;
-}
-
-
-.pruner-action-btn {
-  background: #4285f4;
-  color: white;
-  border: none;
-  padding: 6px 10px;
   border-radius: 4px;
-  cursor: pointer;
   font-size: 13px;
-  margin-left: auto;
+  text-align: center;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
 }
-.pruner-action-btn:hover {
-  background: #3367d6;
+.pruner-bulk-actions-row input[type="number"]:focus {
+  outline: none;
+  border-color: #8ab4f8;
+  box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.3);
 }
-.pruner-action-btn.delete {
-  background-color: #ea4335;
-}
-.pruner-action-btn.delete:hover {
-  background-color: #d93025;
+.pruner-bulk-actions-row .pruner-action-btn {
+  padding: 6px 10px;
 }
 
 
@@ -167,10 +234,15 @@
 }
 
 .pruner-message-item {
-  padding: 10px 15px;
-  border-bottom: 1px solid #3c4043;
+  padding: 12px 18px;
+  border-bottom: 1px solid #303134;
   display: flex;
+  gap: 12px;
   align-items: flex-start;
+  transition: background-color 0.15s ease;
+}
+.pruner-message-item:hover {
+  background-color: #282a2d;
 }
 
 .pruner-message-item:last-child {
@@ -178,57 +250,95 @@
 }
 
 .pruner-message-checkbox {
-  margin-right: 10px;
   margin-top: 5px;
-  flex-shrink: 0;
   accent-color: #8ab4f8;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
 }
 
 .pruner-message-content {
   flex-grow: 1;
-  margin-right: 10px;
-  overflow: hidden; /* To help with text overflow */
 }
 
 .pruner-message-role {
-  font-weight: bold;
-  font-size: 12px;
-  margin-bottom: 4px;
+  font-weight: 500;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #8ab4f8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pruner-message-role .role-icon {
+  font-family: 'Material Symbols Outlined';
+  font-size: 18px;
+  line-height: 1;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  color: #9aa0a6;
+}
+
+.pruner-message-role.user .role-icon {
+  color: #9ef1a7;
+}
+.pruner-message-role.model .role-icon {
   color: #8ab4f8;
 }
 
-.pruner-message-role.user {
-  color: #9ef1a7;
-}
 
 .pruner-message-snippet {
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: 14px;
+  line-height: 1.5;
   color: #bdc1c6;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 60px; 
+  max-height: 63px;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3; 
-  -webkit-box-orient: vertical;
+}
+.pruner-message-snippet.no-content {
+  color: #787c81;
+  font-style: italic;
 }
 
-
 .pruner-delete-btn {
-  background-color: #ea4335;
-  color: white;
+  background-color: transparent;
+  color: #9aa0a6;
   border: none;
-  padding: 5px 8px;
-  border-radius: 4px;
+  padding: 6px;
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 12px;
+  font-family: 'Material Symbols Outlined', 'Material Icons', sans-serif !important; /* Be very specific */
+  font-size: 24px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
   flex-shrink: 0;
   align-self: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  font-style: normal;
+  font-weight: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .pruner-delete-btn:hover {
-  background-color: #d93025;
+  background-color: rgba(234, 67, 53, 0.15);
+  color: #f28b82;
+}
+.pruner-delete-btn:active {
+  background-color: rgba(234, 67, 53, 0.25);
+  color: #ea4335;
+}
+
+
+#pruner-status-message {
+  padding: 10px 18px;
+  text-align: center;
+  background-color: #282828;
+  border-bottom: 1px solid #3c4043;
+  font-size: 13px;
+  color: #bdc1c6;
 }
