@@ -1,0 +1,234 @@
+#ai-studio-pruner-sidebar {
+  position: fixed;
+  top: 0;
+  left: -350px; /* Initially hidden */
+  width: 350px;
+  height: 100%;
+  background-color: #202124;
+  border-right: 1px solid #444;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+  z-index: 99999; /* High z-index */
+  transition: left 0.3s ease-in-out, width 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Google Sans Text', sans-serif;
+  color: #e8eaed;
+}
+
+#ai-studio-pruner-sidebar.visible {
+  left: 0;
+}
+
+#ai-studio-pruner-sidebar.collapsed {
+  left: -330px; /* Almost hidden, just the toggle visible */
+  width: 350px; /* Keep width for smooth re-expand */
+}
+
+#ai-studio-pruner-sidebar.collapsed .pruner-content-wrapper {
+  display: none;
+}
+
+
+.pruner-toggle-visibility-btn {
+  position: absolute;
+  top: 50%;
+  right: -25px; /* Positioned outside the main sidebar area when expanded */
+  transform: translateY(-50%);
+  width: 25px;
+  height: 50px;
+  background-color: #2d2d2d;
+  border: 1px solid #444;
+  border-left: none;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e8eaed;
+  font-size: 18px;
+  z-index: 10; /* Above sidebar content */
+  transition: right 0.3s ease-in-out, background-color 0.2s;
+}
+.pruner-toggle-visibility-btn:hover {
+  background-color: #3c4043;
+}
+
+#ai-studio-pruner-sidebar.collapsed .pruner-toggle-visibility-btn {
+  right: -25px; /* Keep it visible when collapsed */
+}
+#ai-studio-pruner-sidebar.collapsed .pruner-toggle-visibility-btn .arrow {
+  transform: rotate(180deg);
+}
+
+
+.pruner-content-wrapper { /* New wrapper for content */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+
+.pruner-header {
+  padding: 15px;
+  background-color: #2d2d2d;
+  border-bottom: 1px solid #444;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pruner-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.pruner-refresh-btn {
+  background: #8ab4f8;
+  color: #202124;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.pruner-refresh-btn:hover {
+  background: #7ba9f0;
+}
+
+.pruner-bulk-actions {
+  padding: 10px 15px;
+  background-color: #282828;
+  border-bottom: 1px solid #444;
+  flex-shrink: 0;
+}
+
+.pruner-bulk-actions-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.pruner-bulk-actions-row:last-child {
+  margin-bottom: 0;
+}
+
+.pruner-bulk-actions-row label {
+  margin-right: 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.pruner-bulk-actions-row input[type="checkbox"],
+.pruner-bulk-actions-row input[type="number"] {
+  margin-right: 5px;
+  accent-color: #8ab4f8;
+}
+.pruner-bulk-actions-row input[type="number"] {
+  width: 50px;
+  padding: 4px;
+  background-color: #3c4043;
+  border: 1px solid #5f6368;
+  color: #e8eaed;
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+
+.pruner-action-btn {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-left: auto;
+}
+.pruner-action-btn:hover {
+  background: #3367d6;
+}
+.pruner-action-btn.delete {
+  background-color: #ea4335;
+}
+.pruner-action-btn.delete:hover {
+  background-color: #d93025;
+}
+
+
+.pruner-message-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.pruner-message-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #3c4043;
+  display: flex;
+  align-items: flex-start;
+}
+
+.pruner-message-item:last-child {
+  border-bottom: none;
+}
+
+.pruner-message-checkbox {
+  margin-right: 10px;
+  margin-top: 5px;
+  flex-shrink: 0;
+  accent-color: #8ab4f8;
+}
+
+.pruner-message-content {
+  flex-grow: 1;
+  margin-right: 10px;
+  overflow: hidden; /* To help with text overflow */
+}
+
+.pruner-message-role {
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: #8ab4f8;
+}
+
+.pruner-message-role.user {
+  color: #9ef1a7;
+}
+
+.pruner-message-snippet {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #bdc1c6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 60px; 
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3; 
+  -webkit-box-orient: vertical;
+}
+
+
+.pruner-delete-btn {
+  background-color: #ea4335;
+  color: white;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.pruner-delete-btn:hover {
+  background-color: #d93025;
+}
