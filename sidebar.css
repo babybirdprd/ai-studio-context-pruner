@@ -306,12 +306,12 @@
   background-color: transparent;
   color: #9aa0a6;
   border: none;
-  padding: 6px;
+  padding: 8px;
   border-radius: 50%;
   cursor: pointer;
   font-family: 'Material Symbols Outlined', 'Material Icons', sans-serif !important; /* Be very specific */
-  font-size: 24px;
-  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+  font-size: 28px;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 28;
   flex-shrink: 0;
   align-self: center;
   transition: background-color 0.15s ease, color 0.15s ease;
